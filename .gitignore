@@ -51,6 +51,5 @@ next-env.d.ts
 /desktop-app/wwwroot/
 /release/
 /macos-release/
-/.openai/
 __pycache__/
 *.py[cod]
