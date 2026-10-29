@@ -1,0 +1,48 @@
+name: macOS test artifacts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            label: Apple-Silicon
+          - arch: x64
+            label: Intel
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm desktop:web
+      - name: Download Electron runtime
+        run: curl -fL "https://github.com/electron/electron/releases/download/v43.2.0/electron-v43.2.0-darwin-${{ matrix.arch }}.zip" -o electron.zip
+      - name: Package unsigned app
+        run: >-
+          python scripts/package-macos.py
+          --electron-zip electron.zip
+          --output "macos-release/Wuhen-${{ matrix.label }}.zip"
+          --app-source macos-app
+          --web-root desktop-app/wwwroot
+          --icon desktop-app/assets/app.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wuhen-macOS-${{ matrix.label }}-unsigned
+          path: macos-release/*.zip
+          if-no-files-found: error
